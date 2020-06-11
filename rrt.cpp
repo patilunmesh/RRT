@@ -39,7 +39,7 @@ int main()
 	int theta; //heading within steer limits right is negative left is positive
 	Node init; // initial pose
 	Node goal; //goal pose
-	int jumpDistance = GRID_RESOLUTION;
+	int jumpDSQ = GRID_RESOLUTION **2 ;
 
 	//input section (obstacles, start pose, goal pose, resolution, grid size)###################
 	int x, y, parent_id, u;
@@ -51,13 +51,15 @@ int main()
 	cin >> x >> y ;
 	goal = nodePushMerge(x, y,0, 0);
 	
-	nodeList.push_back(init);
+	::nodeList.push_back(init);
 	//nodeList.push_back(goal);
 
 	//cout << "init and goal is (" << init.x << " " << init.y << ") (" << goal.x << " " << goal.y << ")\n";
 
 	//section 3 call in loop random generator ##################################################
-
+	int near_index, x_new, y_new, x_old, y_old, Dsq, jumpDSQ;
+	bool bCollision;
+	bool bGoal = false ;
 	for (int i = 0; i < ITERATIONS; i++)
 	{
 		x_new = randomX();
@@ -68,32 +70,49 @@ int main()
 		bCollision = checkCollision(x_new, y_new, x_old,y_old )
 		if (!bCollision)
 		{
-			D = getDistance(x_new, y_new, x_old, y_old);
+			Dsq = getSQDistance(x_new, y_new, x_old, y_old);
 			u = getAngle(x_new, y_new, x_old, y_old);
-			if (D > jumpDistance)
+			if (Dsq > jumpDSQ)
 			{
-				populateNodes(x_new, y_new, x_old, y_old, u, D);
+				bGoal = populateNodesCheckGoal(x_new, y_new, x_old, y_old, u, Dsq); // also check if goal reached
 			}
-			if (D <= jumpDistance)
+			if (Dsq <= jumpDSQ)
 			{
-				ID++;
 				Node m = nodePushMerge(x_new, y_new, near_index, u);
+				::nodeList.push_back(m);
 			}
-			DGoalCheck = getDistance(x_new, y_new, goal.x, goal.y);
-			if (DGoalCheck <= jumpDistance)
+
+			DGoalChecksq = getSQDistance(x_new, y_new, goal.x, goal.y);
+			if (DGoalChecksq <= jumpDSQ)
 			{
-				cout << "success goal reached" << endl;
-				pathGenerator(near_index);
+				bGoal = true;
 			}
 		}
 		else {ITERATIONS ++ ;}
 		
+		if (bGoal)
+		{
+			cout << "success goal reached" << endl;
+			pathGenerator(near_index);
+			break;
+		}
 
 	}
 
 	//path smoothing #########################################################################
 
 	return 0;
+}
+
+// helping functions
+int getSQDistance(int x1, int y1, int x2, int y2)
+{
+	return (x2 - x1)**2 + (y2 - y1)**2;
+}
+
+int getAngle (int x1, int y1, int x2, int y2)
+{
+	
 }
 
 // random theta generator
@@ -117,7 +136,10 @@ int randomY ()
 }
 // collision checker
 
-
+bool checkCollision(int x, int y)
+{
+	return false;
+}
 
 //add node, add edge
 Node nodePushMerge(int x, int y, int id, int parent_id, int u)
@@ -131,6 +153,24 @@ Node nodePushMerge(int x, int y, int id, int parent_id, int u)
 	return n;
 }
 
+int getNearestNode (int x_new, int y_new)
+{
+	int near_index = 0;
+	int size = nodeList.size()
+	int minD = GRID_HEIGHT**2 + GRID_WIDTH**2;
+	for (int i = 0; i < size; ++i)
+	{
+		x = nodeList[i].x;
+		y = nodeList[i].y;
+		int D = getSQDistance(x_new, y_new, x, y);
+		if (D < minD)
+		{
+			minD = D;
+			near_index = i;
+		}
+	}
+	return near_index;
+}
 
 //path store
 
