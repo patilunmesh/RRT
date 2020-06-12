@@ -12,9 +12,9 @@ using namespace  std;
 	int GRID_RESOLUTION = 1;
 	int GRID_WIDTH = 10;
 	int GRID_HEIGHT = GRID_WIDTH;
-	int STEER_LIMIT_LEFT = 45;
-	int STEER_LIMIT_RIGHT = 45;
-	int ITERATIONS = 100;
+	int STEER_LIMIT_LEFT = 180;
+	int STEER_LIMIT_RIGHT = -180;
+	int ITERATIONS = 1000;
 
 // structs
 
@@ -46,7 +46,6 @@ vector<Node> nodeList; // vector of nodes
 int main()
 {
 	//section2 init vars #####################################################################
-	int theta; //heading within steer limits right is negative left is positive
 	Node init; // initial pose
 	Node goal; //goal pose
 
@@ -81,19 +80,24 @@ int main()
 		near_index = getNearestNode(x_new, y_new);
 		x_old = nodeList[near_index].x ;
 		y_old = nodeList[near_index].y ;
-		cout << "old  x " << x_old << " y "<< y_old << endl;
+		//cout << "old  x " << x_old << " y "<< y_old << endl;
 		u = getAngle(x_new, y_new, x_old, y_old);
-		cout << "angle " << u << endl;
+		//cout << "angle " << u << endl;
+		if (x_new == x_old || y_new == y_old)
+		{
+			ITERATIONS ++;
+			continue;
+		}
 		/*if (not((u >= 0 && u <= STEER_LIMIT_LEFT ) || (u < 0 && u > STEER_LIMIT_RIGHT)))
 		{
 			ITERATIONS++ ; 
 			continue;
-		} */ //for steer limit restrictions
+		}*/ //for steer limit restrictions
 		bCollision = checkCollision(x_new, y_new, x_old, y_old);
 		if (!bCollision)
 		{
 			Dsq = getSQDistance(x_new, y_new, x_old, y_old);
-			cout << " DSQ " << Dsq << " res "<< GRID_RESOLUTION << endl;
+			//cout << " DSQ " << Dsq << " res "<< GRID_RESOLUTION << endl;
 			if (Dsq > GRID_RESOLUTION)
 			{
 				reachIndex = populateNodesCheckGoal(x_new, y_new, goal.x, goal.y, near_index, u, Dsq); // also check if goal reached
@@ -118,17 +122,32 @@ int main()
 			ITERATIONS ++ ;
 			continue;
 		}
-		cout << "number of iter " << i + 1 << endl;
+		cout << "number of iterations " << i + 1 << endl;
 		if (bGoal)
 		{
 			cout << "success goal reached" << endl;
-			pathGenerator(reachIndex);
+			if(nodeList[reachIndex].x != goal.x)
+			{
+				goal = nodePushMerge(goal.x , goal.y, reachIndex, 0.0f);
+				nodeList.push_back(goal);
+				pathGenerator(nodeList.size() - 1);	
+			}
+			else {pathGenerator(reachIndex);}
+			
 			break;
 		}
 	}
-	cout << "size "<< nodeList.size() << endl;
-		//path smoothing #########################################################################
-
+	//cout << "size "<< nodeList.size() << endl;
+		
+	/*
+	cout << "whole tree \n\n";
+	cout << "x  " << " y "<< endl;
+	for (int i = 0; i < nodeList.size(); i++)
+	{
+		cout << nodeList[i].x << "  " << nodeList[i].y << endl;
+		
+	}
+	*/ // to print whole tree if needed
 	return 0;
 }
 
@@ -174,7 +193,7 @@ Node nodePushMerge(float x, float y, int parent_id, float u)
 	return n;
 }
 
-int getNearestNode (float x_new, float y_new)
+int getNearestNode (float x_new, float y_new) //euclidean checking
 {
 	int near_index = 0;
 	int size = nodeList.size();
@@ -188,18 +207,17 @@ int getNearestNode (float x_new, float y_new)
 			near_index = i;
 		}
 	}
-	cout << "near " << near_index<< endl;
+	//cout << "near " << near_index<< endl;
 	return near_index;
 }
 
 int populateNodesCheckGoal(float x_new, float y_new, float xg, float yg, int near_index, float u, float Dsq)
 {
-	cout << "check post in populate \n";
 	float x_, y_;
 	int pid;
 	float x_near = nodeList[near_index].x;
 	float y_near = nodeList[near_index].y;
-	cout << x_near << " " << y_near << " x y" << endl;
+	//cout << x_near << " " << y_near << " x y" << endl;
 	int iter = sqrt(Dsq) / GRID_RESOLUTION;
 	float gapx = abs(x_new - x_near);
 	float xs = (x_new > x_near)? 1 : -1; 
@@ -213,7 +231,7 @@ int populateNodesCheckGoal(float x_new, float y_new, float xg, float yg, int nea
 		pid = near_index;
 		Node n = nodePushMerge(x_, y_, pid, u); 
 		nodeList.push_back(n);
-		cout << i << " "<< x_ << " "<< y_ << " "<< x_new << " " << y_new <<" pushed \n";
+		//cout << i << " "<< x_ << " "<< y_ << " "<< x_new << " " << y_new <<" pushed \n";
 
 		near_index = nodeList.size() - 1;
 
@@ -225,7 +243,6 @@ int populateNodesCheckGoal(float x_new, float y_new, float xg, float yg, int nea
 			break;
 		}
 	}
-	cout << "returning \n";
 	return -1;
 }
 //path store
@@ -233,13 +250,14 @@ int populateNodesCheckGoal(float x_new, float y_new, float xg, float yg, int nea
 void pathGenerator(int index)
 {
 	vector<Node> path;
+	cout << "x  " << " y "<< endl;
 	while (index != 0)
 	{
-		path.push_back(nodeList[index]);
-		cout << "x  " << " y "<< endl; 
+		path.push_back(nodeList[index]); 
 		cout << nodeList[index].x << "  " << nodeList[index].y << endl;
 		index = nodeList[index].parent_id;
 	}
+	
 	cout << "path generated\n";
 
 }
