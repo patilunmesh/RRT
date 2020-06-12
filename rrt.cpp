@@ -2,13 +2,16 @@
 #include <stdlib.h>
 #include <vector>
 #include <math.h>
+#include <chrono>
+#include <random>
+
 using namespace  std;
 
 // section 1 parameters and structures
 //params in cm or degree
 	int GRID_RESOLUTION = 1;
 	int GRID_WIDTH = 10;
-	int GRID_HEIGHT = 10;
+	int GRID_HEIGHT = GRID_WIDTH;
 	int STEER_LIMIT_LEFT = 45;
 	int STEER_LIMIT_RIGHT = 45;
 	int ITERATIONS = 100;
@@ -21,13 +24,18 @@ using namespace  std;
 		int parent_id;
 		float u;
 	};
+	struct Point
+	{
+		int x;
+		int y;
+	};
 
 vector<Node> nodeList; // vector of nodes
 //nodeList.push_back(Node()); // pushing new node created with default constructor
 
 Node nodePushMerge(int x, int y, int parent_id, float u);
-int randomX();
-int randomY();
+Point randomXY();
+//int randomY();
 int getSQDistance(int x1, int y1, int x2, int y2);
 float getAngle (int x1, int y1, int x2, int y2);
 bool checkCollision(int x, int y, int x_old, int y_old);
@@ -60,24 +68,31 @@ int main()
 	cout << "init and goal is (" << init.x << " " << init.y << ") (" << goal.x << " " << goal.y << ")\n";
 
 	//section 3 call in loop random generator ##################################################
+	
 	int near_index, x_new, y_new, x_old, y_old, Dsq,reachIndex;
 
 	bool bCollision;
 	bool bGoal = false ;
+	srand((unsigned) time(0));
 	for (int i = 0; i < ITERATIONS; i++)
 	{
-		x_new = randomX();
-		y_new = randomY();
+		Point p = randomXY();
+		x_new = p.x;
+		y_new = p.y;
+		cout << "new  x " << x_new << " y "<< y_new << endl;
 		near_index = getNearestNode(x_new, y_new);
 		//cout << "near " << near_index << endl;
+		x_old = nodeList[near_index].x ;
+		y_old = nodeList[near_index].y ;
+		cout << "old  x " << x_old << " y "<< y_old << endl;
+
 		u = getAngle(x_new, y_new, x_old, y_old);
-		if ((u < 0 && u > STEER_LIMIT_LEFT ) || (u >= 0 && u <= STEER_LIMIT_RIGHT))
+		cout << "angle " << u << endl;
+		/*if ((u < 0 && u > STEER_LIMIT_LEFT ) || (u >= 0 && u <= STEER_LIMIT_RIGHT))
 		{
 			ITERATIONS++ ; 
 			continue;
-		}
-		x_old = nodeList[near_index].x ;
-		y_old = nodeList[near_index].y ;
+		}*/
 		bCollision = checkCollision(x_new, y_new, x_old, y_old);
 		if (!bCollision)
 		{
@@ -116,8 +131,9 @@ int main()
 		}
 
 	}
-
-	//path smoothing #########################################################################
+	
+	cout << "size "<< nodeList.size() << endl;
+		//path smoothing #########################################################################
 
 	return 0;
 }
@@ -135,18 +151,23 @@ float getAngle (int x1, int y1, int x2, int y2)
 }
 
 // random generator
-int randomX ()
+Point randomXY()
 {
-	int x = rand() % GRID_HEIGHT;
-	cout << " . " << x << endl;
-	return x;
+	Point p;
+	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine generator(seed);
+    std::uniform_int_distribution<int> distributionInteger(0, GRID_WIDTH);
+    // random engine setup complete
+    p.x = distributionInteger(generator);
+	p.y = distributionInteger(generator);
+	return p;	
 }
 
-int randomY ()
+/*int randomY ()
 {
 	int y = rand() % GRID_WIDTH;
 	return y;
-}
+}*/
 // collision checker
 
 bool checkCollision(int x, int y, int x_old, int y_old)
@@ -178,6 +199,7 @@ int getNearestNode (int x_new, int y_new)
 			near_index = i;
 		}
 	}
+	cout << "near " << near_index<< endl;
 	return near_index;
 }
 
@@ -187,16 +209,21 @@ int populateNodesCheckGoal(int x_new, int y_new, int xg, int yg, int near_index,
 	int x_, y_, pid;
 	int x_near = nodeList[near_index].x;
 	int y_near = nodeList[near_index].y;
-	while(Dsq > GRID_RESOLUTION)
+	cout << x_near << " " << y_near << " x y" << endl;
+	int iter = sqrt(Dsq) / GRID_RESOLUTION;
+	int gapx = abs(x_new - x_near);
+	int xs = (x_new > x_near)? 1 : -1; 
+	int gapy = abs(y_new - y_near);
+	int ys = (y_new > y_near)? 1 : -1; 
+	
+	for (int i = 1; i < iter; i++)
 	{
-		cout << x_near << " " << y_near << " x y" << endl;
-		x_ = x_near + GRID_RESOLUTION*cos(u);
-		y_ = y_near + GRID_RESOLUTION*sin(u);
-		Dsq = getSQDistance(x_, y_, x_new, y_new);
+		x_ = x_near + (gapx/iter) * i * xs;
+		y_ = y_near + (gapy/iter) * i * ys;
 		pid = near_index;
 		Node n = nodePushMerge(x_, y_, pid, u); 
 		nodeList.push_back(n);
-		cout << Dsq << " "<< x_ << " "<< y_ << " "<< x_new << " " << y_new <<" pushed \n";
+		cout << i << " "<< x_ << " "<< y_ << " "<< x_new << " " << y_new <<" pushed \n";
 
 		near_index = nodeList.size() - 1;
 
@@ -207,9 +234,6 @@ int populateNodesCheckGoal(int x_new, int y_new, int xg, int yg, int near_index,
 			return near_index;
 			break;
 		}
-		x_near = x_ ;
-		y_near = y_ ;
-
 	}
 	cout << "returning \n";
 	return -1;
