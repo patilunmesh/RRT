@@ -20,28 +20,28 @@ using namespace  std;
 
 	struct Node
 	{
-		int x, y;
+		float x, y;
 		int parent_id;
 		float u;
 	};
 	struct Point
 	{
-		int x;
-		int y;
+		float x;
+		float y;
 	};
 
 vector<Node> nodeList; // vector of nodes
 
 // function templates 
-	Node nodePushMerge(int x, int y, int parent_id, float u);
+	Node nodePushMerge(float x, float y, int parent_id, float u);
 	Point randomXY();
 	//int randomY();
-	int getSQDistance(int x1, int y1, int x2, int y2);
-	float getAngle (int x1, int y1, int x2, int y2);
-	bool checkCollision(int x, int y, int x_old, int y_old);
-	int getNearestNode(int x_new, int y_new);
+	float getSQDistance(float x1, float y1, float x2, float y2);
+	float getAngle (float x1, float y1, float x2, float y2);
+	bool checkCollision(float x, float y, float x_old, float y_old);
+	int getNearestNode(float x_new, float y_new);
 	void pathGenerator(int index);
-	int populateNodesCheckGoal(int x_new, int y_new, int xg, int yg, int near_index, float u, int Dsq);
+	int populateNodesCheckGoal(float x_new, float y_new, float xg, float yg, int near_index, float u, float Dsq);
 
 int main()
 {
@@ -51,7 +51,8 @@ int main()
 	Node goal; //goal pose
 
 	//input section (obstacles, start pose, goal pose, resolution, grid size)###################
-	int x, y, parent_id;
+	float x, y;
+	int parent_id;
 	float u;
 	cout << "enter start pose: x, y";
 	cin >> x >> y ;
@@ -67,8 +68,8 @@ int main()
 
 	//section 3 call in loop random generator ##################################################
 	
-	int near_index, x_new, y_new, x_old, y_old, Dsq,reachIndex;
-
+	int near_index, reachIndex;
+	float x_new, y_new, x_old, y_old, Dsq;
 	bool bCollision;
 	bool bGoal = false ;
 	srand((unsigned) time(0));
@@ -83,11 +84,11 @@ int main()
 		cout << "old  x " << x_old << " y "<< y_old << endl;
 		u = getAngle(x_new, y_new, x_old, y_old);
 		cout << "angle " << u << endl;
-		/*if ((u < 0 && u > STEER_LIMIT_LEFT ) || (u >= 0 && u <= STEER_LIMIT_RIGHT))
+		/*if (not((u >= 0 && u <= STEER_LIMIT_LEFT ) || (u < 0 && u > STEER_LIMIT_RIGHT)))
 		{
 			ITERATIONS++ ; 
 			continue;
-		}*/ //for steer limit restrictions
+		} */ //for steer limit restrictions
 		bCollision = checkCollision(x_new, y_new, x_old, y_old);
 		if (!bCollision)
 		{
@@ -104,7 +105,7 @@ int main()
 				//cout << "check post 2 \n";
 				Node m = nodePushMerge(x_new, y_new, near_index, u);
 				::nodeList.push_back(m);
-				int DGoalChecksq = getSQDistance(x_new, y_new, goal.x, goal.y);
+				float DGoalChecksq = getSQDistance(x_new, y_new, goal.x, goal.y);
 				if (DGoalChecksq <= GRID_RESOLUTION)
 				{
 					//cout << "check post 3 \n";
@@ -124,9 +125,7 @@ int main()
 			pathGenerator(reachIndex);
 			break;
 		}
-
 	}
-	
 	cout << "size "<< nodeList.size() << endl;
 		//path smoothing #########################################################################
 
@@ -134,12 +133,12 @@ int main()
 }
 
 // helping functions
-int getSQDistance(int x1, int y1, int x2, int y2)
+float getSQDistance(float x1, float y1, float x2, float y2)
 {
 	return (x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1);
 }
 
-float getAngle (int x1, int y1, int x2, int y2)
+float getAngle (float x1, float y1, float x2, float y2)
 {
 	float t = atan2(y2 - y1, x2 - x1);
 	return t*180/3.1416f; 
@@ -160,12 +159,12 @@ Point randomXY()
 
 // collision checker
 
-bool checkCollision(int x, int y, int x_old, int y_old)
+bool checkCollision(float x, float y, float x_old, float y_old)
 {
 	return false;
 }
 //add node, add edge
-Node nodePushMerge(int x, int y, int parent_id, float u)
+Node nodePushMerge(float x, float y, int parent_id, float u)
 {
 	Node n;
 	n.x = x;
@@ -175,14 +174,14 @@ Node nodePushMerge(int x, int y, int parent_id, float u)
 	return n;
 }
 
-int getNearestNode (int x_new, int y_new)
+int getNearestNode (float x_new, float y_new)
 {
 	int near_index = 0;
 	int size = nodeList.size();
 	int minD = GRID_HEIGHT*GRID_HEIGHT + GRID_WIDTH*GRID_WIDTH;
 	for (int i = 0; i < size; i++)
 	{
-		int D = getSQDistance(x_new, y_new, nodeList[i].x, nodeList[i].y);
+		float D = getSQDistance(x_new, y_new, nodeList[i].x, nodeList[i].y);
 		if (D < minD)
 		{
 			minD = D;
@@ -193,20 +192,21 @@ int getNearestNode (int x_new, int y_new)
 	return near_index;
 }
 
-int populateNodesCheckGoal(int x_new, int y_new, int xg, int yg, int near_index, float u, int Dsq)
+int populateNodesCheckGoal(float x_new, float y_new, float xg, float yg, int near_index, float u, float Dsq)
 {
 	cout << "check post in populate \n";
-	int x_, y_, pid;
-	int x_near = nodeList[near_index].x;
-	int y_near = nodeList[near_index].y;
+	float x_, y_;
+	int pid;
+	float x_near = nodeList[near_index].x;
+	float y_near = nodeList[near_index].y;
 	cout << x_near << " " << y_near << " x y" << endl;
 	int iter = sqrt(Dsq) / GRID_RESOLUTION;
-	int gapx = abs(x_new - x_near);
-	int xs = (x_new > x_near)? 1 : -1; 
-	int gapy = abs(y_new - y_near);
-	int ys = (y_new > y_near)? 1 : -1; 
+	float gapx = abs(x_new - x_near);
+	float xs = (x_new > x_near)? 1 : -1; 
+	float gapy = abs(y_new - y_near);
+	float ys = (y_new > y_near)? 1 : -1; 
 
-	for (int i = 1; i < iter; i++)
+	for (int i = 1; i <= iter; i++)
 	{
 		x_ = x_near + (gapx/iter) * i * xs;
 		y_ = y_near + (gapy/iter) * i * ys;
@@ -217,7 +217,7 @@ int populateNodesCheckGoal(int x_new, int y_new, int xg, int yg, int near_index,
 
 		near_index = nodeList.size() - 1;
 
-		int DGoalChecksq = getSQDistance(x_ , y_, xg, yg);
+		float DGoalChecksq = getSQDistance(x_ , y_, xg, yg);
 		
 		if (DGoalChecksq < GRID_RESOLUTION)
 		{
@@ -236,8 +236,8 @@ void pathGenerator(int index)
 	while (index != 0)
 	{
 		path.push_back(nodeList[index]);
-		
-		cout << "x " << nodeList[index].x << " y " << nodeList[index].y << endl;
+		cout << "x  " << " y "<< endl; 
+		cout << nodeList[index].x << "  " << nodeList[index].y << endl;
 		index = nodeList[index].parent_id;
 	}
 	cout << "path generated\n";
