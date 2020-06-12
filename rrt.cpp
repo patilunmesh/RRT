@@ -31,22 +31,20 @@ using namespace  std;
 	};
 
 vector<Node> nodeList; // vector of nodes
-//nodeList.push_back(Node()); // pushing new node created with default constructor
 
-Node nodePushMerge(int x, int y, int parent_id, float u);
-Point randomXY();
-//int randomY();
-int getSQDistance(int x1, int y1, int x2, int y2);
-float getAngle (int x1, int y1, int x2, int y2);
-bool checkCollision(int x, int y, int x_old, int y_old);
-int getNearestNode(int x_new, int y_new);
-void pathGenerator(int index);
-int populateNodesCheckGoal(int x_new, int y_new, int xg, int yg, int near_index, float u, int Dsq);
+// function templates 
+	Node nodePushMerge(int x, int y, int parent_id, float u);
+	Point randomXY();
+	//int randomY();
+	int getSQDistance(int x1, int y1, int x2, int y2);
+	float getAngle (int x1, int y1, int x2, int y2);
+	bool checkCollision(int x, int y, int x_old, int y_old);
+	int getNearestNode(int x_new, int y_new);
+	void pathGenerator(int index);
+	int populateNodesCheckGoal(int x_new, int y_new, int xg, int yg, int near_index, float u, int Dsq);
 
 int main()
 {
-	
-
 	//section2 init vars #####################################################################
 	int theta; //heading within steer limits right is negative left is positive
 	Node init; // initial pose
@@ -79,20 +77,17 @@ int main()
 		Point p = randomXY();
 		x_new = p.x;
 		y_new = p.y;
-		cout << "new  x " << x_new << " y "<< y_new << endl;
 		near_index = getNearestNode(x_new, y_new);
-		//cout << "near " << near_index << endl;
 		x_old = nodeList[near_index].x ;
 		y_old = nodeList[near_index].y ;
 		cout << "old  x " << x_old << " y "<< y_old << endl;
-
 		u = getAngle(x_new, y_new, x_old, y_old);
 		cout << "angle " << u << endl;
 		/*if ((u < 0 && u > STEER_LIMIT_LEFT ) || (u >= 0 && u <= STEER_LIMIT_RIGHT))
 		{
 			ITERATIONS++ ; 
 			continue;
-		}*/
+		}*/ //for steer limit restrictions
 		bCollision = checkCollision(x_new, y_new, x_old, y_old);
 		if (!bCollision)
 		{
@@ -102,17 +97,17 @@ int main()
 			{
 				reachIndex = populateNodesCheckGoal(x_new, y_new, goal.x, goal.y, near_index, u, Dsq); // also check if goal reached
 				bGoal = (reachIndex != -1)? true : false;
-				cout << "check post 1 \n";
+				//cout << "check post 1 \n";
 			}
 			if (Dsq <= GRID_RESOLUTION)
 			{
-				cout << "check post 2 \n";
+				//cout << "check post 2 \n";
 				Node m = nodePushMerge(x_new, y_new, near_index, u);
 				::nodeList.push_back(m);
 				int DGoalChecksq = getSQDistance(x_new, y_new, goal.x, goal.y);
 				if (DGoalChecksq <= GRID_RESOLUTION)
 				{
-					cout << "check post 3 \n";
+					//cout << "check post 3 \n";
 					bGoal = true;
 					reachIndex = nodeList.size() - 1;
 				}
@@ -163,11 +158,6 @@ Point randomXY()
 	return p;	
 }
 
-/*int randomY ()
-{
-	int y = rand() % GRID_WIDTH;
-	return y;
-}*/
 // collision checker
 
 bool checkCollision(int x, int y, int x_old, int y_old)
@@ -215,7 +205,7 @@ int populateNodesCheckGoal(int x_new, int y_new, int xg, int yg, int near_index,
 	int xs = (x_new > x_near)? 1 : -1; 
 	int gapy = abs(y_new - y_near);
 	int ys = (y_new > y_near)? 1 : -1; 
-	
+
 	for (int i = 1; i < iter; i++)
 	{
 		x_ = x_near + (gapx/iter) * i * xs;
